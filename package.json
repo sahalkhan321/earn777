@@ -1,0 +1,13 @@
+{
+  "name": "earn777-server",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {"start": "node server.js"},
+  "dependencies": {
+    "express": "^5.1.0",
+    "better-sqlite3": "^12.4.1",
+    "express-session": "^1.18.2",
+    "argon2": "^0.44.0"
+  }
+}
