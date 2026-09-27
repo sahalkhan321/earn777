@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>EARN777</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:Arial;background:#061f67;color:#fff}.app{max-width:520px;margin:auto;min-height:100vh;background:linear-gradient(#07328f,#0755bd);padding-bottom:80px}
+header{padding:15px;display:flex;justify-content:space-between;background:#05256e}.logo{font-size:25px;font-weight:900;color:#ffd42f}.pill{background:#0d4cad;padding:9px 12px;border-radius:14px}
+main{padding:15px}.hero,.card{background:#073d9f;border:1px solid #3981e8;border-radius:17px;padding:18px;margin-bottom:12px}.hero{background:linear-gradient(120deg,#0756e8,#087fef)}h1{margin:0 0 8px}.btn{border:0;border-radius:22px;padding:11px 17px;background:#ffd42f;color:#062c77;font-weight:800}.input{width:100%;padding:13px;margin:7px 0;border-radius:10px;border:1px solid #5891eb;background:#052d7e;color:white}.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.hide{display:none}.nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:min(520px,100%);display:grid;grid-template-columns:repeat(4,1fr);background:#05276f;border-top:1px solid #4383dd}.nav button{background:none;border:0;color:#d5e4ff;padding:12px 2px}.nav .on{color:#ffd42f}.task{margin:9px 0;padding:13px;border-radius:13px;background:#0a49ae}.danger{background:#c0392b;color:#fff}
+</style></head>
+<body><div class="app">
+<header><div class="logo">EARN777</div><div id="userPill" class="pill">Guest</div></header>
+
+<main id="auth">
+<div class="hero"><h1>Welcome</h1><p>Sign in or create your account to access eligible earning tasks.</p></div>
+<div class="card">
+<div id="loginBox"><h2>Login</h2><input id="lemail" class="input" placeholder="Email"><input id="lpass" class="input" type="password" placeholder="Password"><button class="btn" onclick="login()">Login</button><p><button onclick="toggleAuth()">Create account</button></p></div>
+<div id="signupBox" class="hide"><h2>Sign up</h2><input id="sname" class="input" placeholder="Name"><input id="semail" class="input" placeholder="Email"><input id="spass" class="input" type="password" placeholder="Password (8+ chars)"><button class="btn" onclick="signup()">Create Account</button><p><button onclick="toggleAuth()">Back to login</button></p></div>
+<div id="msg"></div></div></main>
+
+<main id="home" class="hide"><div class="hero"><h1>Complete Tasks & Earn</h1><p>Rewards are subject to task eligibility and verification.</p><button class="btn" onclick="loadTasks()">View Tasks</button></div><div class="card"><h2>Wallet</h2><div id="balance">Rs 0.00</div><p>Demo wallet view; real payment processing is not enabled.</p></div></main>
+
+<main id="tasks" class="hide"><h2>📋 Tasks</h2><div id="taskList"></div></main>
+
+<main id="admin" class="hide"><div class="hero"><h1>Admin Dashboard</h1><p>Manage users and tasks.</p></div><div class="grid"><div class="card"><b>Users</b><div id="statsUsers">—</div></div><div class="card"><b>Active Tasks</b><div id="statsTasks">—</div></div></div>
+<div class="card"><h2>Add Task</h2><input id="ttitle" class="input" placeholder="Title"><input id="tdesc" class="input" placeholder="Description"><input id="treward" class="input" type="number" min="0" step="0.01" placeholder="Reward"><button class="btn" onclick="addTask()">Add Task</button></div>
+<div class="card"><h2>Users</h2><div id="users"></div></div></main>
+
+<nav class="nav"><button onclick="page('home')">🏠<br>Home</button><button onclick="page('tasks')">📋<br>Tasks</button><button id="adminNav" class="hide" onclick="page('admin')">🛠️<br>Admin</button><button onclick="logout()">🚪<br>Logout</button></nav>
+</div>
+<script>
+let me=null;
+const $=id=>document.getElementById(id);
+async function api(url,opt={}){let r=await fetch(url,{headers:{'Content-Type':'application/json'},...opt});let d=await r.json();if(!r.ok)throw Error(d.error||'Request failed');return d}
+function toggleAuth(){$('loginBox').classList.toggle('hide');$('signupBox').classList.toggle('hide');$('msg').textContent=''}
+async function login(){try{let d=await api('/api/login',{method:'POST',body:JSON.stringify({email:$('lemail').value,password:$('lpass').value})});setUser(d.user)}catch(e){$('msg').textContent=e.message}}
+async function signup(){try{let d=await api('/api/signup',{method:'POST',body:JSON.stringify({name:$('sname').value,email:$('semail').value,password:$('spass').value})});setUser(d.user)}catch(e){$('msg').textContent=e.message}}
+function setUser(u){me=u;$('auth').classList.add('hide');$('userPill').textContent=u.name;$('home').classList.remove('hide');if(u.role==='admin'){$('adminNav').classList.remove('hide');loadAdmin()}}
+function page(p){['home','tasks','admin'].forEach(x=>$(x).classList.add('hide'));$(p).classList.remove('hide');if(p==='tasks')loadTasks();if(p==='admin')loadAdmin()}
+async function loadTasks(){page('tasks');let d=await api('/api/tasks');$('taskList').innerHTML=d.tasks.map(t=>`<div class="task"><b>${t.title}</b><p>${t.description}</p><strong>Rs ${Number(t.reward).toFixed(2)}</strong></div>`).join('')||'<div class="card">No active tasks yet.</div>'}
+async function loadAdmin(){if(!me||me.role!=='admin')return;let [s,u]=await Promise.all([api('/api/admin/stats'),api('/api/admin/users')]);$('statsUsers').textContent=s.users;$('statsTasks').textContent=s.tasks;$('users').innerHTML=u.users.map(x=>`<div class="task">${x.name} — ${x.email} <small>(${x.role})</small></div>`).join('')}
+async function addTask(){try{await api('/api/admin/tasks',{method:'POST',body:JSON.stringify({title:$('ttitle').value,description:$('tdesc').value,reward:Number($('treward').value)})});$('ttitle').value=$('tdesc').value=$('treward').value='';loadAdmin();alert('Task added')}catch(e){alert(e.message)}}
+async function logout(){await fetch('/api/logout',{method:'POST'});location.reload()}
+(async()=>{try{let d=await api('/api/me');setUser(d.user)}catch{}})();
+</script></body></html>
